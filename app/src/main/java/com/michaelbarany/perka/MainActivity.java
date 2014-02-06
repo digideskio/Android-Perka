@@ -3,11 +3,14 @@ package com.michaelbarany.perka;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Fragment;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Base64;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,10 +25,13 @@ import android.widget.Toast;
 import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
+import retrofit.mime.TypedInput;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.regex.Pattern;
 
 public class MainActivity extends Activity {
@@ -156,22 +162,65 @@ public class MainActivity extends Activity {
             final Toast toast = Toast.makeText(getActivity(), "Sending...", Toast.LENGTH_LONG);
 
             ApplyService service = Api.getRestAdapter().create(ApplyService.class);
-            service.index(applicationForm, new Callback<String>() {
+            service.index(applicationForm, new Callback<Response>() {
                 @Override
-                public void success(String s, Response response) {
+                public void success(Response response, Response response2) {
+                    Log.d("PERKA", "success");
+                    String message = getResponseBody(response.getBody());
+                    Log.d("PERKA", message);
+
                     toast.cancel();
-                    Toast.makeText(getActivity(), "Success!", Toast.LENGTH_LONG).show();
-                    getActivity().finish();
+                    new AlertDialog.Builder(getActivity())
+                        .setTitle("Success!")
+                        .setMessage(message)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                                getActivity().finish();
+                            }
+                        })
+                        .create()
+                        .show();
                 }
 
                 @Override
                 public void failure(RetrofitError retrofitError) {
+                    Log.d("PERKA", "failure");
+                    String message = getResponseBody(retrofitError.getResponse().getBody());
+                    Log.d("PERKA", message);
+
                     toast.cancel();
-                    Toast.makeText(getActivity(), "Failure!", Toast.LENGTH_LONG).show();
                     item.setEnabled(true);
+                    new AlertDialog.Builder(getActivity())
+                        .setTitle("Failure!")
+                        .setMessage(message)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        })
+                        .create()
+                        .show();
                 }
             });
             toast.show();
+        }
+
+        private String getResponseBody(TypedInput body) {
+            BufferedReader r;
+            StringBuilder total = new StringBuilder();
+            try {
+                r = new BufferedReader(new InputStreamReader(body.in()));
+                String line;
+                while ((line = r.readLine()) != null) {
+                    total.append(line);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return total.toString();
         }
     }
 
