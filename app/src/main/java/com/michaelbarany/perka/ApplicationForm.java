@@ -5,7 +5,7 @@ public class ApplicationForm {
     String last_name;
     String email;
     String position_id = "ANDROID";
-    String explanation = "https://bitbucket.org/mbarany/android-perka";
+    String explanation = "https://github.com/mbarany/Android-Perka";
     String source;
     String resume;
 
